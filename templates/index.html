@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise Security | Zero Trust URL Analysis</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: { brand: { 50: '#f0f9ff', 100: '#e0f2fe', 500: '#0ea5e9', 600: '#0284c7', 900: '#0c4a6e'} }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-gray-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- Top Navigation -->
+    <nav class="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-2 text-brand-600 font-bold text-xl tracking-tight">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    Secure Phishing Detection
+                </div>
+                <div class="text-sm font-medium text-slate-500 hidden md:block">
+                    Real-time Threat Intelligence API
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow flex items-center justify-center p-4 py-12">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 w-full max-w-4xl overflow-hidden transition-all duration-500 fade-in relative hover:shadow-lg">
+            
+            <div class="p-8 md:p-12">
+                <div class="max-w-2xl mx-auto text-center mb-10">
+                    <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">URL Threat Analysis</h1>
+                    <p class="mt-4 text-slate-500 text-sm">Deploy our enterprise-grade Random Forest pipeline to scan external links against 11 proprietary vulnerability metrics instantly.</p>
+                </div>
+                
+                <!-- Input Area -->
+                <form id="analyzeForm" class="max-w-3xl mx-auto relative mb-12" onsubmit="event.preventDefault(); analyzeUrl();">
+                    <div class="relative shadow-sm rounded-xl flex items-center">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-link text-slate-400"></i>
+                        </div>
+                        <input 
+                            type="url" 
+                            id="urlInput" 
+                            class="block w-full pl-11 pr-36 py-4 sm:text-lg border-gray-300 border rounded-xl focus:ring-brand-500 focus:border-brand-500 text-slate-800 transition-colors"
+                            placeholder="Paste suspicious endpoint here..." 
+                            required autocomplete="off"
+                        >
+                        <button type="submit" id="analyzeBtn" class="absolute inset-y-1 right-1 px-6 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-lg text-sm transition-colors flex items-center gap-2 group disabled:opacity-50">
+                            <span id="btnText">Analyze Link</span>
+                            <i id="btnIcon" class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Status Banner (Hidden Initially) -->
+                <div id="statusBanner" class="hidden rounded-xl p-6 mb-8 border transition-all duration-300 transform translate-y-2 opacity-0 flex items-center justify-between">
+                    <div>
+                        <div class="text-xs uppercase tracking-wider font-semibold opacity-75 mb-1" id="statusLabel">Security Verdict</div>
+                        <h2 id="statusText" class="text-3xl font-bold"></h2>
+                    </div>
+                    <div id="statusIcon" class="text-5xl"></div>
+                </div>
+
+                <!-- Deep Metrics Grid (Hidden Initially) -->
+                <div id="featuresContainer" class="hidden transition-all duration-500 opacity-0">
+                    <div class="flex items-center justify-between mb-4 border-b border-gray-100 pb-2">
+                        <h3 class="text-sm font-bold text-slate-700 uppercase tracking-widest">Predictive Telemetry Dashboard</h3>
+                        <span class="text-xs font-semibold px-2 py-1 rounded bg-slate-100 text-slate-600"><i class="fa-solid fa-code-branch mr-1"></i> Random Forest (n=200)</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4" id="featuresGrid">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+            </div>
+            
+            <div class="bg-gray-50 px-8 py-4 border-t border-gray-100 text-xs text-slate-400 text-center font-medium">
+                Protected by Secure Phishing Detection Infrastructure &bull; Model version: 2.1.0-RC1
+            </div>
+        </div>
+    </main>
+
+    <script>
+        async function analyzeUrl() {
+            const urlInput = document.getElementById('urlInput').value.trim();
+            const btn = document.getElementById('analyzeBtn');
+            const btnText = document.getElementById('btnText');
+            const btnIcon = document.getElementById('btnIcon');
+            const statusBanner = document.getElementById('statusBanner');
+            const featuresContainer = document.getElementById('featuresContainer');
+            
+            if (!urlInput) return;
+
+            // Loading state
+            btn.disabled = true;
+            btnText.innerText = 'Scanning...';
+            btnIcon.className = 'fa-solid fa-circle-notch fa-spin';
+            
+            statusBanner.classList.add('hidden', 'opacity-0', 'translate-y-2');
+            featuresContainer.classList.add('hidden', 'opacity-0');
+
+            try {
+                const protocolRegex = /^[a-zA-Z]+:\/\//;
+                const finalUrl = protocolRegex.test(urlInput) ? urlInput : 'http://' + urlInput;
+
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: finalUrl })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    renderSuccess(data);
+                } else {
+                    alert(`Error: ${data.error}`);
+                }
+            } catch (error) {
+                alert('Network error connecting to Threat Intelligence API.');
+            } finally {
+                btn.disabled = false;
+                btnText.innerText = 'Analyze Link';
+                btnIcon.className = 'fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform';
+            }
+        }
+
+        function renderSuccess(data) {
+            const statusBanner = document.getElementById('statusBanner');
+            const statusIcon = document.getElementById('statusIcon');
+            const statusText = document.getElementById('statusText');
+            const statusLabel = document.getElementById('statusLabel');
+            const featuresContainer = document.getElementById('featuresContainer');
+            const featuresGrid = document.getElementById('featuresGrid');
+
+            statusBanner.classList.remove('hidden');
+            featuresContainer.classList.remove('hidden');
+            
+            // Allow DOM to update before triggering transition
+            setTimeout(() => {
+                statusBanner.classList.remove('opacity-0', 'translate-y-2');
+                featuresContainer.classList.remove('opacity-0');
+            }, 50);
+
+            // Banner State
+            if (data.status === 'Safe') {
+                statusBanner.className = 'rounded-xl p-8 mb-10 border transition-all duration-300 transform flex items-center justify-between bg-emerald-50 border-emerald-200 text-emerald-900 shadow-sm';
+                statusIcon.innerHTML = '<i class="fa-solid fa-shield-check text-emerald-500"></i>';
+                statusText.innerText = 'Endpoint Secure';
+            } else {
+                statusBanner.className = 'rounded-xl p-8 mb-10 border transition-all duration-300 transform flex items-center justify-between bg-rose-50 border-rose-200 text-rose-900 shadow-sm ring-2 ring-rose-500/20';
+                statusIcon.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-rose-600"></i>';
+                statusText.innerText = 'Malicious Payload Detected';
+            }
+
+            // Format Enterprise Telemetry Data (11 Features)
+            const f = data.features_analyzed;
+            const features = [
+                { label: 'String Length', value: f[0], icon: 'fa-ruler', bad: f[0] > 75 },
+                { label: 'TLS Encryption', value: f[1] ? 'Active' : 'Missing', icon: 'fa-lock', bad: !f[1] },
+                { label: 'Obfuscation (@)', value: f[2] ? 'Detected' : 'Clean', icon: 'fa-at', bad: f[2] },
+                { label: 'Directory Depth', value: f[3], icon: 'fa-folder-tree', bad: f[3] > 4 },
+                { label: 'Domain Size', value: f[4], icon: 'fa-globe', bad: f[4] > 20 },
+                { label: 'IP Spoofing', value: f[5] ? 'Detected' : 'Clean', icon: 'fa-network-wired', bad: f[5] },
+                { label: 'Subdomains', value: f[6], icon: 'fa-layer-group', bad: f[6] >= 3 },
+                { label: 'Phish Keywords', value: f[7] ? 'Matched' : 'Clean', icon: 'fa-user-secret', bad: f[7] },
+                { label: 'URL Shortener', value: f[8] ? 'Yes' : 'No', icon: 'fa-compress', bad: f[8] },
+                { label: 'Custom Port', value: f[9] ? 'Active' : 'None', icon: 'fa-ethernet', bad: f[9] },
+                { label: 'String Entropy', value: f[10], icon: 'fa-wave-square', bad: f[10] > 4.8 }
+            ];
+
+            featuresGrid.innerHTML = features.map(item => `
+                <div class="bg-white border rounded-lg p-4 flex items-start gap-4 transition-all duration-200 hover:shadow-md ${item.bad ? 'border-rose-200 bg-rose-50/30' : 'border-gray-200'}">
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${item.bad ? 'bg-rose-100 text-rose-600 ring-4 ring-rose-50/50' : 'bg-brand-50 text-brand-600'}">
+                        <i class="fa-solid ${item.icon}"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs text-slate-500 font-semibold uppercase tracking-wide">${item.label}</div>
+                        <div class="text-lg font-bold mt-0.5 ${item.bad ? 'text-rose-700' : 'text-slate-800'}">${item.value}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+    </script>
+</body>
+</html>

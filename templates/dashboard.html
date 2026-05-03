@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Phishing Detection Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: auto; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .stats { display: flex; justify-content: space-between; margin-bottom: 30px; }
+        .stat-card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 30%; text-align: center; }
+        .stat-card h3 { margin: 0 0 10px 0; color: #555; }
+        .stat-card p { margin: 0; font-size: 24px; font-weight: bold; }
+        .phishing-stat { color: #d9534f; }
+        .safe-stat { color: #5cb85c; }
+        .table-container { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; word-break: break-all; }
+        th { background-color: #f8f9fa; }
+        .badge { padding: 5px 10px; border-radius: 4px; font-weight: bold; font-size: 12px; color: white; }
+        .badge-safe { background-color: #5cb85c; }
+        .badge-phishing { background-color: #d9534f; }
+        .back-link { display: inline-block; margin-bottom: 20px; text-decoration: none; color: #007bff; }
+        .progress-bar-bg { background-color: #e9ecef; border-radius: 4px; height: 8px; width: 100%; margin-top: 4px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-link">&larr; Back to Scanner</a>
+        <div class="header">
+            <h1>Analytics Dashboard</h1>
+            <p>Real-time threat intelligence and confidentially scores powered by Secure Phishing Detection</p>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <h3>Total Scans Analzyed</h3>
+                <p>{{ dashboard_data.total_scans }}</p>
+            </div>
+            <div class="stat-card">
+                <h3>Threats Mitigated (Phishing)</h3>
+                <p class="phishing-stat">{{ dashboard_data.phishing_count }}</p>
+            </div>
+            <div class="stat-card">
+                <h3>Verified Safe URLs</h3>
+                <p class="safe-stat">{{ dashboard_data.safe_count }}</p>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <h2>Recent Scans Security Detail</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 40%;">URL Tested</th>
+                        <th style="width: 15%;">Verdict</th>
+                        <th style="width: 25%;">Confidence / Security Score</th>
+                        <th style="width: 20%;">Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for scan in dashboard_data.recent_scans %}
+                    <tr>
+                        <td>{{ scan.url }}</td>
+                        <td>
+                            {% if scan.status|lower == 'safe' %}
+                                <span class="badge badge-safe">Verified Safe</span>
+                            {% else %}
+                                <span class="badge badge-phishing">Phishing Threat</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% set pct = (scan.probability * 100)|round(1) if scan.probability else 0 %}
+                            <div>{{ pct }}% Confident</div>
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill" style="width: {{ pct }}%; background-color: {{ '#5cb85c' if scan.status|lower == 'safe' else '#d9534f' }};"></div>
+                            </div>
+                        </td>
+                        <td>{{ scan.timestamp.strftime('%Y-%m-%d %H:%M:%S') if scan.timestamp else 'N/A' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" style="text-align: center;">No recent scans available.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
